@@ -1,0 +1,56 @@
+:root {
+  --header-font-color: #4d6987;
+  --table-border: #e2e2e2;
+  --o-color: #3ebcd3;
+  --x-color: #3a89d5;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+}
+
+html {
+  box-sizing: border-box;
+  font-family: 'Fredoka', sans-serif;
+}
+
+*, *::before, *::after {
+  box-sizing: inherit;
+}
+
+.header {
+  font-size: 80px;
+  color: var(--header-font-color);
+  padding-top: 50px;
+  text-align: center;
+}
+
+.gameboard {
+  display: grid;
+  justify-content: center;
+  margin-top: 100px;
+}
+
+table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  text-align: center;
+}
+
+td {
+  height: 150px; 
+  width: 150px;
+  border: 5px solid var(--table-border);
+  font-size: 100px;
+  vertical-align: baseline;
+  cursor: pointer;
+}
+
+.o {
+  color: var(--o-color);
+}
+
+.x {
+  color: var(--x-color);
+}
