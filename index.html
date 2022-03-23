@@ -15,24 +15,65 @@
 <body>
   <div class="header">Tic Tac Toe</div>
 
-  <div class="gameboard">
-    <table>
-      <tr>
-        <td data-index="0"></td>
-        <td data-index="1"></td>
-        <td data-index="2"></td>
-      </tr>
-      <tr>
-        <td data-index="3"></td>
-        <td data-index="4"></td>
-        <td data-index="5"></td>
-      </tr>
-      <tr>
-        <td data-index="6"></td>
-        <td data-index="7"></td>
-        <td data-index="8"></td>
-      </tr>
-    </table>
+  <div class="main-content">
+    <div class="left-score">
+      <p class="left player"></p>
+      <p class="left score"></p>
+    </div>
+
+    <div class="middle-container">
+      <div class="settings">
+        <div class="button-wrapper">
+          <button class="ai down">vs AI</button>
+          <button class="pvp down">2 Players</button>
+        </div>
+        
+        <form class="hide">
+          <div class="player-1">
+            <label for="player1">Player 1</label>
+            <input type="text" name="player1" id="player1" required>
+          </div>
+          <div class="player-2">
+            <label for="player2">Player 2</label>
+            <input type="text" name="player2" id="player2" required>
+          </div>
+          <div class="form-button-container">
+            <button>Submit</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="gameboard">
+        <table>
+          <tr>
+            <td data-index="0"></td>
+            <td data-index="1"></td>
+            <td data-index="2"></td>
+          </tr>
+          <tr>
+            <td data-index="3"></td>
+            <td data-index="4"></td>
+            <td data-index="5"></td>
+          </tr>
+          <tr>
+            <td data-index="6"></td>
+            <td data-index="7"></td>
+            <td data-index="8"></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="restart-container">
+        <button>Restart</button>
+      </div>
+      <div class="game-message">
+      </div>
+    </div>
+
+    <div class="right-score">
+      <p class="right player"></p>
+      <p class="right score"></p>
+    </div>
   </div>
 </body>
 
