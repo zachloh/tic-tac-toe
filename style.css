@@ -212,3 +212,8 @@ td {
 .down {
   transform: translateY(90px);
 }
+
+.up {
+  position: relative;
+  top: -750px;
+}

@@ -57,12 +57,17 @@ const player = function(mark) {
     return moveCount;
   }
 
+  function resetMoveCount() {
+    moveCount = 0;
+  }
+
   return {
     getName,
     setName,
     getMark,
     addMoveCount,
-    getMoveCount
+    getMoveCount,
+    resetMoveCount
   };
 }
 
@@ -102,6 +107,8 @@ const pvpController = (function() {
 
   function resetTurn() {
     playerTurn = 'x';
+    playerX.resetMoveCount();
+    playerO.resetMoveCount();
   }
 
   return {
@@ -113,6 +120,99 @@ const pvpController = (function() {
     getTotalMoves,
     resetTurn
   };
+})();
+
+// vsAI game mode module
+const vsAIController = (function() {
+
+  let playerMoveCount = 0;
+  let remainingSlots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+
+  function getMoveCount() {
+    return playerMoveCount;
+  }
+
+  function updateMoveCount() {
+    playerMoveCount++;
+  }
+
+  function resetMoveCount() {
+    playerMoveCount = 0;
+  }
+
+  function updateRemainingSlots(index) {
+    remainingSlots = remainingSlots.filter(item => item !== index);
+  }
+  
+  function resetRemainingSlots() {
+    remainingSlots = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  }
+
+  function getAIMove() {
+    const AIMove = minimax(gameboard.getBoard(), 'o');
+    return AIMove.index;
+  }
+
+  function minimax(newBoard, player) {
+
+    let availableSpots = [];
+
+    for (let i = 0; i < newBoard.length; i++) {
+      if (!newBoard[i]) availableSpots.push(i); 
+    }
+
+    if (gameController.hasWinner('x', newBoard)) {
+      return {score: -10};
+    } else if (gameController.hasWinner('o', newBoard)) {
+      return {score: 10};
+    } else if (availableSpots.length === 0) {
+      return {score: 0};
+    }
+
+    let moves = [];
+
+    for (let i = 0; i < availableSpots.length; i++) {
+      let move = {};
+      move.index = availableSpots[i];
+
+      newBoard[availableSpots[i]] = player;
+
+      if (player === 'o') {
+        const result = minimax(newBoard, 'x');
+        move.score = result.score;
+      } else {
+        const result = minimax(newBoard, 'o');
+        move.score = result.score;
+      }
+
+      newBoard[availableSpots[i]] = '';
+
+      moves.push(move);
+    }
+
+    let bestMove;
+
+    if (player === 'o') {
+      bestMove = moves.reduce((chosenMove, currentMove) => {
+        return (currentMove.score > chosenMove.score) ? currentMove : chosenMove;
+      });
+    } else {
+      bestMove = moves.reduce((chosenMove, currentMove) => {
+        return (currentMove.score < chosenMove.score) ? currentMove : chosenMove;
+      });
+    }
+
+    return bestMove;
+  }
+
+  return {
+    getMoveCount,
+    updateMoveCount,
+    resetMoveCount,
+    updateRemainingSlots,
+    getAIMove,
+    resetRemainingSlots
+  }
 })();
 
 const displayController = (function() {
@@ -129,27 +229,81 @@ const displayController = (function() {
   const gameMessage = document.querySelector('.game-message');
   const restartButton = document.querySelector('.restart-container button');
 
+  window.addEventListener('load', () => {
+    gameMessage.textContent = 'Choose your game mode!';
+  })
+
   cells.forEach(cell => {
     cell.addEventListener('click', (e) => {
       const index = e.target.dataset.index;
-      const mark = pvpController.getPlayerTurn();
 
-      if (!gameController.isRoundOver()) {
+      // PVP mode
+      if (gameController.getGameMode() === 'PVP') {
+        const mark = pvpController.getPlayerTurn();
+
         // Check if a mark already exists
-        if (gameboard.isValid(index)) {
+        if (!gameController.isRoundOver() && gameboard.isValid(index)) {
           pvpController.recordMove();
           gameboard.setMark(index, mark);
           addToGameBoard(index, mark);
-        }
 
-        if (gameController.hasWinner(mark, gameboard.getBoard())) {
-          gameMessage.textContent = `${pvpController.getName(mark)} wins!`;
-          gameController.roundEnd();
-          updateScore(mark);
-          restartButton.textContent = 'New Round';
-        } else {
-          pvpController.swapTurn();
-          displayTurn();
+          // Check for winner
+          if (gameController.hasWinner(mark, gameboard.getBoard())) {
+            gameMessage.textContent = `${pvpController.getName(mark)} wins!`;
+            gameController.roundEnd();
+            updateScore(mark);
+            restartButton.textContent = 'New Round';
+          } else {
+            if (pvpController.getTotalMoves() === 9) {
+              gameMessage.textContent = "It's a tie!";
+              gameController.roundEnd();
+              restartButton.textContent = 'New Round';
+            } else {
+              pvpController.swapTurn();
+              displayTurn();
+            }
+          }
+        }     
+      // vsAI mode
+      } else if (gameController.getGameMode() === 'vsAI') {  
+
+        // Check if mark already exists
+        if (!gameController.isRoundOver() && gameboard.isValid(index)) {
+          gameboard.setMark(index, 'x');
+          addToGameBoard(index, 'x');
+          vsAIController.updateMoveCount();
+          vsAIController.updateRemainingSlots(Number(index));
+
+          // Check if player has won
+          if (gameController.hasWinner('x', gameboard.getBoard())) {
+            gameMessage.textContent = 'You win this round!';
+            gameController.roundEnd();
+            restartButton.textContent = 'New Round';
+          } else {
+
+            // Check for tie
+            if (vsAIController.getMoveCount() === 5) {
+              gameMessage.textContent = "It's a tie!";
+              gameController.roundEnd();
+              restartButton.textContent = 'New Round';
+            } else {
+
+              // Make AI move
+              if (!gameController.isRoundOver()) {
+                const AImoveIndex = vsAIController.getAIMove();
+                gameboard.setMark(AImoveIndex, 'o');
+                addToGameBoard(AImoveIndex, 'o');
+                vsAIController.updateRemainingSlots(AImoveIndex);
+
+                // Check if AI has won
+                if (gameController.hasWinner('o', gameboard.getBoard())) {
+                    gameMessage.textContent = 'AI wins this round!';
+                    gameController.roundEnd();
+                    restartButton.textContent = 'New Round';
+                }
+              }
+            }
+          }
         }
       }
     });
@@ -159,6 +313,9 @@ const displayController = (function() {
     gameController.swapToVsAi();
     hidePvpDisplay();
     moveButtonsDown();
+    restartButton.textContent = 'Restart';
+    gameMessage.textContent = 'Make your move!';
+    gameController.roundStart();
   });
 
   pvpButton.addEventListener('click', () => {
@@ -198,11 +355,20 @@ const displayController = (function() {
 
   restartButton.addEventListener('click', () => {
     gameboard.resetBoard();
-    pvpController.resetTurn();
     resetGameBoard();
     gameController.roundStart();
-    displayTurn();
+
     restartButton.textContent = 'Restart';
+    if (gameController.getGameMode() === 'PVP') {
+      pvpController.resetTurn();
+      displayTurn();
+    }
+
+    if (gameController.getGameMode() === 'vsAI') {
+      gameMessage.textContent = 'Make your move!';
+      vsAIController.resetMoveCount();
+      vsAIController.resetRemainingSlots();
+    }
   });
 
   function moveButtonsDown() {
@@ -259,7 +425,6 @@ const displayController = (function() {
     rightNameDisplay.classList.add('hide');
     leftScore.classList.add('hide');
     rightScore.classList.add('hide');
-    gameMessage.classList.add('hide');
   }
 
   function showPvpDisplay() {
@@ -281,6 +446,7 @@ const displayController = (function() {
 const gameController = (function() {
 
   let roundOver = false;
+  let gameMode;
 
   const WINNING_COMBINATIONS = [
     [0, 1, 2],
@@ -292,13 +458,17 @@ const gameController = (function() {
     [0, 4, 8],
     [2, 4, 6]
   ]
+
+  function getGameMode() {
+    return gameMode;
+  }
   
   function isRoundOver() {
     return roundOver;
   }
 
   function hasWinner(mark, gameboard) {
-    if (pvpController.getTotalMoves() < 5) return false;
+    if (gameMode === 'PVP' && pvpController.getTotalMoves() < 5) return false;
 
     return WINNING_COMBINATIONS.some(combination => {
       return combination.every(index => {
@@ -309,10 +479,14 @@ const gameController = (function() {
 
   function swapToVsAi() {
     resetGame();
+    gameMode = 'vsAI';
+    vsAIController.resetMoveCount();
+    vsAIController.resetRemainingSlots();
   }
 
   function swapToPVP() {
     resetGame();
+    gameMode = 'PVP';
     pvpController.resetTurn();
   }
 
@@ -331,6 +505,7 @@ const gameController = (function() {
   }
 
   return {
+    getGameMode,
     isRoundOver,
     hasWinner,
     swapToVsAi,
